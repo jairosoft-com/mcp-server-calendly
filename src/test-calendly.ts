@@ -14,71 +14,77 @@ if (!apiKey) {
 // Create a new instance of the CalendlyService
 const calendlyService = new CalendlyService(apiKey);
 
-// Test function to fetch events
+// Test function to fetch and display events
 async function testFetchEvents() {
   try {
     console.log('Fetching Calendly events...');
     
-    // First, we need to get the current user's organization URI
-    // This is required for the events endpoint
-    const userInfoResponse = await fetch('https://api.calendly.com/users/me', {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Get current user info
+    console.log('Fetching user info...');
+    const user = await calendlyService.getCurrentUser();
+    console.log(`Logged in as: ${user.name} (${user.email})`);
     
-    if (!userInfoResponse.ok) {
-      const errorData = await userInfoResponse.json();
-      throw new Error(`Failed to fetch user info: ${errorData.message || userInfoResponse.statusText}`);
+    // Fetch active events for the current user
+    console.log('\nFetching active events...');
+    const eventsResponse = await calendlyService.fetchEvents(user.uri, 'active');
+    const events = eventsResponse.collection;
+    
+    if (!events || events.length === 0) {
+      console.log('No active scheduled events found.');
+      return;
     }
     
-    const userInfo = await userInfoResponse.json();
-    const userUri = userInfo.resource.uri;
-    const organizationUri = userInfo.resource.current_organization;
+    console.log(`\nFound ${events.length} active events. Fetching details...`);
     
-    console.log('User URI:', userUri);
-    console.log('Organization URI:', organizationUri);
+    // Process each event to get invitees
+    const tableData = [];
     
-    // Fetch events from the last 7 days
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
-    // Include both user and organization URIs as required by the API
-    const events = await calendlyService.fetchEvents({
-      user: userUri,
-      organization: organizationUri,
-      min_start_time: oneWeekAgo.toISOString(),
-      count: 5 // Limit to 5 events for testing
-    });
-    
-    console.log('Successfully fetched events:');
-    console.log(JSON.stringify(events, null, 2));
-    
-    // If we have events, try to fetch the first event's details
-    if (events.collection && events.collection.length > 0) {
-      const firstEvent = events.collection[0];
-      console.log('\nFetching details for event:', firstEvent.uri);
+    for (const [index, event] of events.entries()) {
+      const eventId = calendlyService.extractEventId(event.uri);
       
-      const eventDetails = await calendlyService.getEvent(firstEvent.uri);
-      console.log('\nEvent details:');
-      console.log(JSON.stringify(eventDetails, null, 2));
+      // Get invitees for this event
+      const invitees = await calendlyService.getEventInvitees(eventId);
+      const emails = invitees
+        .map(invitee => invitee.email)
+        .filter(Boolean)
+        .join(', ') || 'None';
+      
+      // Add event data to table
+      tableData.push([
+        index + 1,
+        event.name,
+        new Date(event.start_time).toLocaleString(),
+        new Date(event.end_time).toLocaleString(),
+        event.status,
+        event.uri,
+        event.event_type,
+        emails
+      ]);
     }
+    
+    // Display results in a table
+    console.log('\n=== Calendly Events ===');
+    console.table(tableData, [
+      '#', 'Event', 'Start Time', 'End Time', 'Status', 'URI', 'Event Type', 'Attendees'
+    ]);
     
   } catch (error) {
-    console.error('Error testing Calendly service:');
+    console.error('\nError testing Calendly service:');
     console.error(error instanceof Error ? error.message : String(error));
     
     // Log additional error details if available
-    if (error instanceof Error && 'response' in error) {
+    if (error && typeof error === 'object' && 'response' in error) {
       const response = (error as any).response;
       if (response) {
         console.error('Response status:', response.status);
-        console.error('Response data:', response.data);
+        try {
+          const errorData = await response.json();
+          console.error('Error details:', JSON.stringify(errorData, null, 2));
+        } catch (e) {
+          console.error('Could not parse error response');
+        }
       }
     }
-    
-    process.exit(1);
   }
 }
 

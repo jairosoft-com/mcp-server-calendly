@@ -105,7 +105,121 @@ export interface CalendlyEventsResponse {
   };
 }
 
+export interface CalendlyUser {
+  /**
+   * The user's unique identifier URI
+   */
+  uri: string;
+  
+  /**
+   * The user's name
+   */
+  name: string;
+  
+  /**
+   * The user's email address
+   */
+  email: string;
+  
+  /**
+   * The user's scheduling URL
+   */
+  scheduling_url: string;
+  
+  /**
+   * The user's timezone
+   */
+  timezone: string;
+  
+  /**
+   * The user's avatar URL
+   */
+  avatar_url: string;
+  
+  /**
+   * The user's current organization URI
+   */
+  current_organization: string;
+  
+  /**
+   * The time the user was created
+   */
+  created_at: string;
+  
+  /**
+   * The time the user was last updated
+   */
+  updated_at: string;
+}
+
+export interface CalendlyInvitee {
+  /**
+   * The invitee's email address
+   */
+  email: string;
+  
+  /**
+   * The invitee's name
+   */
+  name: string;
+  
+  /**
+   * The invitee's status
+   */
+  status: 'active' | 'canceled' | 'completed' | 'processing' | 'no_show';
+  
+  /**
+   * The time the invitee was created
+   */
+  created_at: string;
+  
+  /**
+   * The time the invitee was last updated
+   */
+  updated_at: string;
+  
+  /**
+   * The URI of the event the invitee is associated with
+   */
+  event: string;
+  
+  /**
+   * The questions and answers provided by the invitee
+   */
+  questions_and_answers?: Array<{
+    question: string;
+    answer: string;
+    position: number;
+  }>;
+  
+  /**
+   * The invitee's timezone
+   */
+  timezone?: string;
+  
+  /**
+   * The invitee's rescheduled from event URI if this is a rescheduled event
+   */
+  rescheduled_from?: string;
+  
+  /**
+   * The invitee's reschedule event URI if this invitee rescheduled
+   */
+  reschedule_event?: string;
+}
+
 export interface FetchEventsParams {
+  /**
+   * The user URI to fetch events for (required)
+   */
+  user: string;
+  
+  /**
+   * The status of events to fetch (e.g., 'active', 'canceled')
+   * @default 'active'
+   */
+  status?: string;
+  
   /**
    * The number of records to return (default: 20, max: 100)
    */
@@ -125,11 +239,6 @@ export interface FetchEventsParams {
    * The upper bound of the date range to filter events by (ISO 8601 format)
    */
   max_start_time?: string;
-  
-  /**
-   * The user URI to filter events by
-   */
-  user?: string;
   
   /**
    * The event type URI to filter events by

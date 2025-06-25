@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CalendlyService } from '../services/calendly.service.js';
-import type { FetchEventsParams, CalendlyEvent } from '../interfaces/calendly.interface.js'; // Removed unused CalendlyEventsResponse
+import type { CalendlyEvent } from '../interfaces/calendly.interface.js';
 
 /**
  * Formats a date string to a more readable format
@@ -78,11 +78,11 @@ function formatEvents(events: CalendlyEvent[]): string {
  * @returns Formatted string with the events information
  */
 async function fetchCalendlyEvents(
-  params: FetchEventsParams,
+  userUri: string,
   calandlyService: CalendlyService
 ): Promise<string> {
   try {
-    const response = await calandlyService.fetchEvents(params);
+    const response = await calandlyService.fetchEvents(userUri, 'active');
     return formatEvents(response.collection);
   } catch (error) {
     console.error('Error in fetchCalendlyEvents:', error);
@@ -96,60 +96,39 @@ async function fetchCalendlyEvents(
  * @param calandlyService Instance of CalendlyService
  */
 export function registerCalendlyTools(server: McpServer, calandlyService: CalendlyService): void {
-  // Register the fetchCalendlyEvents tool
+  // Register the fetch_calendly_events tool
   server.tool(
     'fetch_calendly_events',
     {
-      description: 'Fetches upcoming Calendly events',
+      description: 'Fetches upcoming Calendly events for the authenticated user',
       parameters: {
         type: 'object',
-        properties: {
-          count: {
-            type: 'number',
-            description: 'Number of events to return (default: 10, max: 100)',
-            minimum: 1,
-            maximum: 100
-          },
-          min_start_time: {
-            type: 'string',
-            format: 'date-time',
-            description: 'Filter events with start time after this datetime (ISO 8601 format)'
-          },
-          max_start_time: {
-            type: 'string',
-            format: 'date-time',
-            description: 'Filter events with start time before this datetime (ISO 8601 format)'
-          },
-          event_type: {
-            type: 'string',
-            description: 'Filter events by event type URI'
-          },
-          user: {
-            type: 'string',
-            description: 'Filter events by user URI'
-          },
-          organization: {
-            type: 'string',
-            description: 'Filter events by organization URI'
-          },
-          sort: {
-            type: 'string',
-            enum: ['start_time:asc', 'start_time:desc'],
-            description: 'Sort order for events (default: start_time:asc)'
-          }
-        },
+        properties: {},
         additionalProperties: false
       },
       required: []
     },
-    async (params: FetchEventsParams) => {
-      const result = await fetchCalendlyEvents(params, calandlyService);
-      return {
-        content: [{
-          type: 'text',
-          text: result
-        }]
-      };
+    async () => {
+      try {
+        // Get the current user's URI
+        const user = await calandlyService.getCurrentUser();
+        const result = await fetchCalendlyEvents(user.uri, calandlyService);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: result
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: `Error fetching Calendly events: ${error instanceof Error ? error.message : String(error)}`
+          }],
+          isError: true
+        };
+      }
     }
   );
 }
