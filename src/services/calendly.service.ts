@@ -10,21 +10,25 @@ import type {
  */
 export class CalendlyService {
   private readonly baseUrl = 'https://api.calendly.com';
-  private readonly apiKey: string;
-  private readonly defaultHeaders: Record<string, string>;
 
   /**
    * Creates a new instance of the CalendlyService
+   */
+  constructor() {
+    // No initialization needed as we'll get API key per request
+  }
+
+  /**
+   * Get headers with the provided API key
    * @param apiKey The Calendly API key (personal access token)
    */
-  constructor(apiKey: string) {
+  private getHeaders(apiKey: string): Record<string, string> {
     if (!apiKey) {
-      throw new Error('Calendly API key is required');
+      throw new Error('Calendly API key is required for this request');
     }
     
-    this.apiKey = apiKey;
-    this.defaultHeaders = {
-      'Authorization': `Bearer ${this.apiKey}`,
+    return {
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
@@ -32,13 +36,14 @@ export class CalendlyService {
 
   /**
    * Fetches the current user's information
+   * @param apiKey The Calendly API key (personal access token)
    * @returns A promise that resolves to the current user's information
    */
-  public async getCurrentUser(): Promise<CalendlyUser> {
+  public async getCurrentUser(apiKey: string): Promise<CalendlyUser> {
     try {
       const response = await fetch(`${this.baseUrl}/users/me`, {
         method: 'GET',
-        headers: this.defaultHeaders,
+        headers: this.getHeaders(apiKey),
       });
 
       if (!response.ok) {
@@ -56,23 +61,33 @@ export class CalendlyService {
 
   /**
    * Fetches events from the Calendly API
+   * @param apiKey The Calendly API key (personal access token)
    * @param userUri The URI of the user to fetch events for
    * @param status The status of events to fetch (e.g., 'active')
+   * @param count The number of events to fetch
+   * @param sort The sort order of events
    * @returns A promise that resolves to the events response
    */
-  public async fetchEvents(userUri: string, status = 'active'): Promise<CalendlyEventsResponse> {
+  public async fetchEvents(
+    apiKey: string,
+    userUri: string,
+    status: 'active' | 'canceled' | 'all' = 'active',
+    count: number = 20,
+    sort: 'start_time:asc' | 'start_time:desc' = 'start_time:asc'
+  ): Promise<CalendlyEventsResponse> {
     try {
       const params = new URLSearchParams({
         user: userUri,
         status: status,
-        count: '100' // Max allowed by API
+        count: String(count),
+        sort: sort
       });
 
       const url = `${this.baseUrl}/scheduled_events?${params.toString()}`;
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.defaultHeaders,
+        headers: this.getHeaders(apiKey),
       });
 
       if (!response.ok) {
@@ -89,16 +104,29 @@ export class CalendlyService {
 
   /**
    * Fetches invitees for a specific event
-   * @param eventId The ID of the event to fetch invitees for
+   * @param apiKey The Calendly API key (personal access token)
+   * @param eventUuid The UUID of the event to fetch invitees for
+   * @param count The number of invitees to fetch
+   * @param status The status of invitees to fetch
    * @returns A promise that resolves to the list of invitees
    */
-  public async getEventInvitees(eventId: string): Promise<CalendlyInvitee[]> {
+  public async getEventInvitees(
+    apiKey: string,
+    eventUuid: string,
+    count: number = 100,
+    status: 'active' | 'canceled' | 'all' = 'all'
+  ): Promise<CalendlyInvitee[]> {
     try {
-      const url = `${this.baseUrl}/scheduled_events/${eventId}/invitees`;
+      const params = new URLSearchParams({
+        count: String(count),
+        status: status
+      });
+
+      const url = `${this.baseUrl}/scheduled_events/${eventUuid}/invitees?${params.toString()}`;
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.defaultHeaders,
+        headers: this.getHeaders(apiKey),
       });
 
       if (!response.ok) {
@@ -109,7 +137,7 @@ export class CalendlyService {
       const data = await response.json();
       return data.collection as CalendlyInvitee[];
     } catch (error) {
-      console.error(`Error fetching invitees for event ${eventId}:`, error);
+      console.error(`Error fetching invitees for event ${eventUuid}:`, error);
       throw new Error(`Failed to fetch event invitees: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

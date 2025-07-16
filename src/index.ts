@@ -1,70 +1,64 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CalendlyService } from "./services/calendly.service.js";
-import { registerCalendlyTools } from "./tools/calendlyTools.js";
-import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import { getCalendlyEvents } from './handlers/calendly.handlers.js';
 
-// Load environment variables
-dotenv.config();
+// Get port from environment variable or use default
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Check if CALENDLY_PERSONAL_ACCESS_TOKEN is set
-const apiKey = process.env.CALENDLY_PERSONAL_ACCESS_TOKEN;
-if (!apiKey) {
-  console.error('Error: CALENDLY_PERSONAL_ACCESS_TOKEN environment variable is not set');
-  process.exit(1);
-}
+// Create Express app
+const app = express();
+const httpServer = createServer(app);
 
-// Create server instance
-const server = new McpServer({
-  name: "calendly",
-  version: "1.0.0",
-  description: "MCP server for Calendly integration"
+// Enable CORS
+app.use(cors());
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-// Initialize Calendly service
-let calendlyService: CalendlyService;
-try {
-  console.error("Initializing Calendly service...");
-  calendlyService = new CalendlyService(apiKey);
-  console.error("Calendly service initialized successfully");
-} catch (error) {
-  console.error("Failed to initialize Calendly service:", error);
-  process.exit(1);
-}
+// API routes
+app.post('/api/calendly/events', getCalendlyEvents);
 
-// Register Calendly tools
-try {
-  console.error("Registering Calendly tools...");
-  registerCalendlyTools(server, calendlyService);
-  console.error("Calendly tools registered successfully");
-} catch (error) {
-  console.error("Failed to register Calendly tools:", error);
-  process.exit(1);
-}
-
-// Create and connect the transport
-const transport = new StdioServerTransport();
-
-// Connect the server to the transport
-server.connect(transport).catch((error) => {
-  console.error("Failed to connect to transport:", error);
-  process.exit(1);
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Not found' });
 });
 
-console.error("MCP server started successfully");
+// Error handler
+app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', error);
+  return res.status(500).json({
+    error: 'Internal server error',
+    details: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+});
 
 // Handle process termination
-process.on('SIGINT', () => {
-  console.error("Shutting down MCP server...");
-  process.exit(0);
+const shutdown = () => {
+  console.log('Shutting down server...');
+  httpServer.close(() => {
+    console.log('Server stopped successfully');    
+    process.exit(0);
+  });
+};
+
+// Handle process termination signals
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+  shutdown();
 });
 
-process.on('SIGTERM', () => {
-  console.error("Received SIGTERM. Shutting down...");
-  process.exit(0);
+// Start the server
+httpServer.listen(PORT, () => {
+  console.log(`Calendly API Server running on http://localhost:${PORT}`);
+  console.log(`Calendly Events endpoint: POST http://localhost:${PORT}/api/calendly/events`);
 });
-
-// Keep the process alive
-setInterval(() => {
-  // Keep the process alive
-}, 1000 * 60 * 60); // 1 hour

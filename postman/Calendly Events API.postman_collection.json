@@ -1,0 +1,53 @@
+{
+  "info": {
+    "name": "Calendly Events API",
+    "description": "Collection for interacting with the Calendly Events API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "c6e8f7a1-8e3d-4d7f-9b5c-1a2b3c4d5e6f"
+  },
+  "item": [
+    {
+      "name": "Get Calendly Events",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"apiKey\": \"eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzQ5NDUxMTY0LCJqdGkiOiJjZjEzZDkwNy1mMGQyLTRjZDMtOWFmMC0wNmU0YTk0ZmNkYTIiLCJ1c2VyX3V1aWQiOiI4OGFjOGZhOS0zYmIyLTRkMzctODEzMS05OGZhNGNiOGY1MzEifQ.ZBX8ply7LLbUNVRnmaO1-DEk7hcWojgJX8o9Za2WogyhrG-TYC6nD3CE3s88L62naUYEJOqwp_zASv4qqrNBbQ\",\n    \"userUri\": \"https://api.calendly.com/users/88ac8fa9-3bb2-4d37-8131-98fa4cb8f531\",\n    \"status\": \"active\",\n    \"count\": 10,\n    \"sort\": \"start_time:asc\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/calendly/events",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "calendly",
+            "events"
+          ]
+        },
+        "description": "Fetches a list of Calendly events based on the provided criteria.\n\n**Required Fields:**\n- `apiKey`: Your Calendly API key\n- `userUri`: Your Calendly user URI\n\n**Optional Fields:**\n- `status`: Filter events by status (`active`, `canceled`, or `all`)\n- `count`: Number of events to return (default: 20, max: 100)\n- `sort`: Sort order (`start_time:asc` or `start_time:desc`)"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

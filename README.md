@@ -1,26 +1,26 @@
-# MCP Server (Node.js)
+# Calendly Events API
 
-A Node.js implementation of the Model Context Protocol (MCP) server, built with TypeScript for type safety and better developer experience.
+A simple REST API for fetching Calendly events with stateless authentication.
 
 ## Features
 
-- TypeScript support
-- MCP protocol implementation
-- Easy to extend and customize
-- Built with modern Node.js features
+- Single endpoint for fetching Calendly events
+- Stateless authentication (API key in request body)
+- Built with TypeScript and Express
+- Environment variable configuration
 
 ## Prerequisites
 
 - Node.js 16.x or later
 - npm 7.x or later
-- TypeScript 4.5 or later
+- A Calendly API key
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mcp-server-nodejs.git
-   cd mcp-server-nodejs
+   git clone https://github.com/yourusername/calendly-events-api.git
+   cd calendly-events-api
    ```
 
 2. Install dependencies:
@@ -28,26 +28,70 @@ A Node.js implementation of the Model Context Protocol (MCP) server, built with 
    npm install
    ```
 
-## Building the Project
+## Running the Server
 
-To compile TypeScript to JavaScript:
+### Development Mode
+
+```bash
+npm run dev
+```
+
+### Production Build
 
 ```bash
 npm run build
+npm start
 ```
 
-This will compile the TypeScript files and output them to the `build` directory.
+## API Endpoint
 
-## Usage
+### Get Calendly Events
 
-After building, you can run the server using:
-
-```bash
-node build/index.js
+```http
+POST /api/calendly/events
 ```
 
-## Development
+**Request Body:**
+```json
+{
+  "apiKey": "your_calendly_api_key",
+  "userUri": "your_calednly_user_uri",
+  "status": "active",
+  "count": 20,
+  "sort": "start_time:asc"
+}
+```
 
-- Source code is in the `src` directory
-- Built files are output to the `build` directory
-- The project uses TypeScript for type safety
+**Parameters:**
+- `apiKey` (required): Your Calendly API key
+- `userUri` (required): Your Calendly user URI
+- `status` (optional): Filter events by status (`active`, `canceled`, or `all`)
+- `count` (optional): Number of events to return (default: 20, max: 100)
+- `sort` (optional): Sort order (`start_time:asc` or `start_time:desc`)
+
+**Example Response:**
+```json
+{
+  "collection": [
+    {
+      "uri": "https://api.calendly.com/event_types/ABC123",
+      "name": "15 Minute Meeting",
+      "active": true,
+      "scheduling_url": "https://calendly.com/yourname/15min"
+    }
+  ],
+  "pagination": {
+    "count": 1,
+    "next_page": null
+  }
+}
+```
+
+## Environment Variables
+
+- `PORT` - Port to run the server on (default: 3000)
+- `NODE_ENV` - Environment (development/production)
+
+## License
+
+MIT
