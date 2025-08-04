@@ -1,51 +1,111 @@
-# Building a Remote MCP Server on Cloudflare (Without Auth)
+# Calendly MCP Server
 
-This example allows you to deploy a remote MCP server that doesn't require authentication on Cloudflare Workers.
+This is a Model Context Protocol (MCP) server that integrates with Calendly's API, allowing AI assistants to manage Calendly events, availability, and scheduling programmatically.
 
-## Get started:
+## Prerequisites
 
-[![Deploy to Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-authless)
+- Node.js 16+ and npm
+- Docker (for containerized deployment)
+- Calendly API access token
+- Calendly organization URI
 
-This will deploy your MCP server to a URL like: `remote-mcp-server-authless.<your-account>.workers.dev/sse`
+## Installation
 
-Alternatively, you can use the command line below to get the remote MCP Server created on your local machine:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-org/mcp-server-calendly.git
+   cd mcp-server-calendly
+   ```
 
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   Create a `.env` file in the root directory with:
+   ```
+   AUTH_TOKEN=your_secure_auth_token
+   CALENDLY_ACCESS_TOKEN=your_calendly_access_token
+   CALENDLY_ORGANIZATION_URI=your_organization_uri
+   NODE_ENV=development
+   ```
+
+## Running the Server
+
+### Development Mode
 ```bash
-npm create cloudflare@latest -- my-mcp-server --template=cloudflare/ai/demos/remote-mcp-authless
+npm run dev
 ```
 
-## Customizing your MCP Server
+### Production Mode
+```bash
+npm start
+```
 
-To add your own [tools](https://developers.cloudflare.com/agents/model-context-protocol/tools/) to the MCP server, define each tool inside the `init()` method of `src/index.ts` using `this.server.tool(...)`.
+## Available Calendly Tools
 
-## Connect to Cloudflare AI Playground
+This MCP server provides the following Calendly integration tools:
 
-You can connect to your MCP server from the Cloudflare AI Playground, which is a remote MCP client:
+- **List Events**: Retrieve a list of scheduled events
+- **Get Event Details**: Get detailed information about a specific event
+- **List Event Types**: View available event types
+- **Check Availability**: Check availability for scheduling
+- **Create Event**: Schedule a new event
+- **Cancel Event**: Cancel an existing event
 
-1. Go to https://playground.ai.cloudflare.com/
-2. Enter your deployed MCP server URL (`remote-mcp-server-authless.<your-account>.workers.dev/sse`)
-3. You can now use your MCP tools directly from the playground!
+### Example Usage with Claude
 
-## Connect Claude Desktop to your MCP server
+You can ask Claude to interact with your Calendly instance:
 
-You can also connect to your remote MCP server from local MCP clients, by using the [mcp-remote proxy](https://www.npmjs.com/package/mcp-remote).
+```
+Please check my availability for a 30-minute meeting next Tuesday.
+```
 
-To connect to your MCP server from Claude Desktop, follow [Anthropic's Quickstart](https://modelcontextprotocol.io/quickstart/user) and within Claude Desktop go to Settings > Developer > Edit Config.
+```
+Schedule a meeting with jane@example.com for next Wednesday at 2pm using my "30 Minute Meeting" event type.
+```
 
-Update with this configuration:
+## Security Considerations
+
+- Always use HTTPS in production
+- Keep your `AUTH_TOKEN` and `CALENDLY_ACCESS_TOKEN` secure
+- Set appropriate scopes for your Calendly access token
+- Regularly rotate your access tokens
+- Use environment variables for sensitive information
+
+## Connecting Claude Desktop
+
+To connect Claude Desktop to your Calendly MCP server:
+
+1. Follow [Anthropic's Quickstart](https://modelcontextprotocol.io/quickstart/user)
+2. In Claude Desktop, go to Settings > Developer > Edit Config
+3. Add your MCP server configuration:
 
 ```json
 {
   "mcpServers": {
-    "calculator": {
+    "calendly": {
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://localhost:8787/sse?token=your-token" // or remote-mcp-server-authless.your-account.workers.dev/sse?token=your-token
+        "http://localhost:8787/sse?token=your-auth-token"
       ]
     }
   }
 }
 ```
 
-Restart Claude and you should see the tools become available.
+4. Restart Claude Desktop
+5. The Calendly tools should now be available in your conversation
+
+## Troubleshooting
+
+- **Connection Issues**: Verify your server is running and accessible
+- **Authentication Errors**: Check your `AUTH_TOKEN` and Calendly access token
+- **Permission Issues**: Ensure your Calendly token has the necessary scopes
+- **Logs**: Check server logs for detailed error messages
+
+## License
+
+[MIT License](LICENSE)
