@@ -3,37 +3,26 @@ import {
     CalendlyErrorResponse, 
     CalendlyEventsResponse, 
     CalendlyUserResponse, 
-    CalendlyInvitee, 
     CalendlyInviteesResponse 
 } from "../interface/calendlyInterfaces";
 
-
-
-// Shared authentication token
-let currentAuthToken: string | undefined;
-
-// Function to set the authentication token
-export function setAuthToken(token: string | undefined) {
-    currentAuthToken = token;
-}
-
-export function getCalendlyEvents() {
+export function getCalendlyEvents(token: string) {
     return {
         name: "getCalendlyEvents",
         schema: {
-            startDateTime: z.string().describe("Start date and time in ISO 8601 format (e.g., 2023-01-01T00:00:00)"),
-            endDateTime: z.string().describe("End date and time in ISO 8601 format (e.g., 2023-01-31T23:59:59)"),
+            startDateTime: z.string().datetime().describe("Start date and time in ISO 8601 format (e.g., 2023-01-01T00:00:00)"),
+            endDateTime: z.string().datetime().describe("End date and time in ISO 8601 format (e.g., 2023-01-31T23:59:59)"),
         },
         handler: async ({ startDateTime, endDateTime }: { startDateTime: string; endDateTime: string }) => {
             try {
-                if (!currentAuthToken) {
+                if (!token) {
                     throw new Error("Calendly personal access token not found. Please set the AUTH_TOKEN environment variable.");
                 }
 
                 // First, get the current user's URI
                 const userResponse = await fetch('https://api.calendly.com/users/me', {
                     headers: {
-                        'Authorization': `Bearer ${currentAuthToken}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
@@ -56,7 +45,7 @@ export function getCalendlyEvents() {
 
                 const eventsResponse = await fetch(url.toString(), {
                     headers: {
-                        'Authorization': `Bearer ${currentAuthToken}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
@@ -89,7 +78,7 @@ export function getCalendlyEvents() {
                         
                         const inviteesResponse = await fetch(inviteesUrl.toString(), {
                             headers: {
-                                'Authorization': `Bearer ${currentAuthToken}`,
+                                'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json',
                             },
                         });
